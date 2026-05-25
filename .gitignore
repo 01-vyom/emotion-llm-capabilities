@@ -1,0 +1,10 @@
+.venv*/
+runs/
+*.jsonl
+*.csv
+*.parquet
+*.safetensors
+*.pt
+*.pth
+__pycache__/
+.DS_Store

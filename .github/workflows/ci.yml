@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+  schedule:
+    - cron: "17 8 * * *"
+
+jobs:
+  python-stage1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile Stage 1 code
+        run: python -m compileall emotion_stage1
+      - name: Generate fixture prompts
+        run: |
+          python -m emotion_stage1.run_stage1 \
+            --dry-run-prompts \
+            --fixture-smoke-test \
+            --output-dir runs/stage1_fixture_dry
