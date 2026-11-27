@@ -1,4 +1,4 @@
-# Emotion LLM Capabilities
+# Emotion LLM Capabilities | [Report](https://docs.google.com/document/d/1NqnWK7fCpIGDUoMf4hfkzcF31tjFYP1UjbFVRLBIjbE/edit?usp=sharing)
 
 Research code and notes for testing whether affective framing and emotion-like
 internal control signals can improve LLM reliability on tedious, low-salience
@@ -54,6 +54,26 @@ python -m emotion_stage1.run_stage1 \
 - [Stage 2 plan](docs/stage2-plan.md)
 - [Stage 3 implementation notes](emotion_stage3/README.md)
 - [Stage 3 plan and execution record](docs/stage3-plan.md)
+
+### Rebuilding the write-up and checks
+
+The write-up contains the methods, examples and results needed to read it on its
+own. Repository commands and artifact locations are kept here:
+
+- `python docs/build_mats_writeup.py` renders the Markdown to self-contained HTML
+  and, when Chrome is available, PDF.
+- `python docs/figures/make_mats_figures.py` rebuilds the overview and numbered
+  figures from `docs/figures/data/`. The inputs include run aggregates and
+  follow-up analyses of existing outputs: truncation and repetition-loop checks,
+  the random-versus-no-steering bootstrap interval, text baselines, cue
+  comparisons, and example draws.
+- `python docs/figures/bigram_baseline.py <vignettes.jsonl>` reruns the text-only
+  baseline on the steering stories.
+- `docs/figures/data/changed_examples_seed2026.json` contains the sampled changed
+  items and flip counts; `docs/figures/data/stage35_ifeval_truncated_loops.csv`
+  contains the repetition-loop check.
+- Plans and preregistered test sets are in `docs/stage*-plan.md` and
+  `docs/stage7-execution.md`.
 
 ## Core Hypothesis
 
