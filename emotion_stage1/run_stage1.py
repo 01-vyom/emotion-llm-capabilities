@@ -23,10 +23,11 @@ from .banking77 import (
     parse_prediction,
 )
 from .generation import GenerationConfig, make_generator, render_chat_prompts
-from .metrics import confusion_counts, summarize
+from .metrics import confusion_counts, paired_accuracy_deltas, summarize
 
 
 DEFAULT_MODEL = "Qwen/Qwen3-8B"
+BASELINE_CONDITIONS = ("neutral_empty", "neutral_length_matched")
 
 
 def parse_args() -> argparse.Namespace:
@@ -93,6 +94,25 @@ def write_summary_csv(path: Path, rows) -> None:
             writer.writerow(asdict(row))
 
 
+def write_paired_deltas_csv(path: Path, rows) -> None:
+    fieldnames = [
+        "condition",
+        "baseline",
+        "n",
+        "accuracy_delta",
+        "accuracy_delta_ci_low",
+        "accuracy_delta_ci_high",
+        "wins",
+        "ties",
+        "losses",
+    ]
+    with path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(asdict(row))
+
+
 def main() -> None:
     args = parse_args()
     output_dir = Path(args.output_dir)
@@ -135,8 +155,11 @@ def main() -> None:
         "fixture_smoke_test": args.fixture_smoke_test,
         "split": args.split,
         "limit": args.limit,
+        "num_examples": len(examples),
+        "num_prompts": len(prompt_rows),
         "seed": args.seed,
         "conditions": args.conditions,
+        "paired_baselines": list(BASELINE_CONDITIONS),
         "temperature": args.temperature,
         "top_p": args.top_p,
         "max_new_tokens": args.max_new_tokens,
@@ -193,8 +216,14 @@ def main() -> None:
         )
 
     write_jsonl(output_dir / "predictions.jsonl", rows)
-    summary_rows = summarize(rows, seed=args.seed)
+    summary_rows = summarize(rows, seed=args.seed, labels=labels)
     write_summary_csv(output_dir / "summary.csv", summary_rows)
+    paired_rows = paired_accuracy_deltas(
+        rows,
+        baselines=BASELINE_CONDITIONS,
+        seed=args.seed,
+    )
+    write_paired_deltas_csv(output_dir / "paired_deltas.csv", paired_rows)
     write_jsonl(output_dir / "confusions.jsonl", confusion_counts(rows))
 
     run_stats = {
@@ -206,6 +235,7 @@ def main() -> None:
 
     print(f"Wrote predictions to {output_dir / 'predictions.jsonl'}")
     print(f"Wrote summary to {output_dir / 'summary.csv'}")
+    print(f"Wrote paired deltas to {output_dir / 'paired_deltas.csv'}")
 
 
 if __name__ == "__main__":

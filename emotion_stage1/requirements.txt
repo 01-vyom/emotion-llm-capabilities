@@ -1,5 +1,12 @@
-datasets>=2.19.0
+datasets>=2.19.0,<4.0.0
 tqdm>=4.66.0
 transformers>=4.51.0
 torch>=2.3.0
 vllm>=0.8.0
+absl-py>=2.0.0
+immutabledict>=4.0.0
+langdetect>=1.0.9
+nltk>=3.8.0
+numpy>=1.26.0,<3.0.0
+accelerate>=1.0.0,<2.0.0
+matplotlib>=3.8.0,<4.0.0

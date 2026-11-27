@@ -6,8 +6,9 @@ useful for smoke tests and environments without vLLM installed.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 
 @dataclass(frozen=True)
@@ -19,6 +20,11 @@ class GenerationConfig:
     batch_size: int = 32
     dtype: str = "bfloat16"
     trust_remote_code: bool = True
+    max_model_len: int | None = None
+    gpu_memory_utilization: float = 0.9
+    enforce_eager: bool = False
+    tensor_parallel_size: int = 1
+    rope_scaling: dict[str, Any] | None = None
 
 
 class Generator(Protocol):
@@ -26,8 +32,33 @@ class Generator(Protocol):
         ...
 
 
+def build_vllm_engine_kwargs(config: GenerationConfig) -> dict[str, Any]:
+    kwargs: dict[str, Any] = {
+        "model": config.model,
+        "dtype": config.dtype,
+        "trust_remote_code": config.trust_remote_code,
+        "gpu_memory_utilization": config.gpu_memory_utilization,
+        "enforce_eager": config.enforce_eager,
+        "tensor_parallel_size": config.tensor_parallel_size,
+    }
+    if config.max_model_len is not None:
+        kwargs["max_model_len"] = config.max_model_len
+    if config.rope_scaling is not None:
+        rope_scaling = dict(config.rope_scaling)
+        kwargs["hf_overrides"] = {
+            # Transformers exposes rope_scaling; vLLM 0.19 Qwen3 reads
+            # rope_parameters. Set both to support either config surface.
+            "rope_scaling": rope_scaling,
+            "rope_parameters": dict(rope_scaling),
+        }
+    return kwargs
+
+
 class VLLMGenerator:
     def __init__(self, config: GenerationConfig):
+        if config.rope_scaling is not None:
+            os.environ.setdefault("VLLM_ALLOW_LONG_MAX_MODEL_LEN", "1")
+
         from vllm import LLM, SamplingParams
 
         self.config = config
@@ -36,11 +67,7 @@ class VLLMGenerator:
             top_p=config.top_p,
             max_tokens=config.max_new_tokens,
         )
-        self.llm = LLM(
-            model=config.model,
-            dtype=config.dtype,
-            trust_remote_code=config.trust_remote_code,
-        )
+        self.llm = LLM(**build_vllm_engine_kwargs(config))
 
     def generate(self, prompts: list[str]) -> list[str]:
         outputs = self.llm.generate(prompts, self.sampling_params)
@@ -66,6 +93,7 @@ class TransformersGenerator:
         )
         if self.tokenizer.pad_token_id is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.tokenizer.padding_side = "left"
 
     def generate(self, prompts: list[str]) -> list[str]:
         results: list[str] = []
@@ -83,9 +111,9 @@ class TransformersGenerator:
                     pad_token_id=self.tokenizer.pad_token_id,
                     eos_token_id=self.tokenizer.eos_token_id,
                 )
-            prompt_lens = inputs["attention_mask"].sum(dim=1).tolist()
-            for ids, prompt_len in zip(output_ids, prompt_lens, strict=True):
-                gen_ids = ids[int(prompt_len) :]
+            prompt_width = inputs["input_ids"].shape[1]
+            for ids in output_ids:
+                gen_ids = ids[prompt_width:]
                 results.append(self.tokenizer.decode(gen_ids, skip_special_tokens=True))
         return results
 

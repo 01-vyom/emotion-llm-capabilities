@@ -1,0 +1,36 @@
+digraph study_map {
+  rankdir=LR; bgcolor="#fcfcfb"; fontname="Helvetica"; fontcolor="#0b0b0b";
+  labelloc="t"; fontsize=15;
+  label=<<b>Represented at every scale &#8212; but only weakly coupled to behavior</b><br/> >;
+  nodesep=0.42; ranksep=1.15; pad=0.3;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11.5, margin="0.20,0.14",
+        color="#52514e", fontcolor="#0b0b0b"];
+  edge [color="#52514e", penwidth=1.6, arrowsize=0.9];
+
+  subgraph cluster_int {
+    label="INTERVENTIONS"; labeljust="l"; fontname="Helvetica-Bold"; fontsize=12;
+    style="rounded,dashed"; color="#898781";
+    prompt [label="Prompt affect\n(calm / desperate)", fillcolor="#dcebfb"];
+    steer  [label="Activation steering\n(diligence direction)", fillcolor="#dcebfb"];
+  }
+
+  models [label="Qwen3  8B &#8594; 14B &#8594; 32B\n+ Claude Sonnet 5 (frontier)", fillcolor="#f2f2ef", width=2.4];
+
+  subgraph cluster_find {
+    label="FINDINGS"; labeljust="l"; fontname="Helvetica-Bold"; fontsize=12;
+    style="rounded,dashed"; color="#898781";
+    probe [label="Representation\nclear at every scale", fillcolor="#ece8f6", color="#4a3aa7", penwidth=1.6];
+    acc [label="Accuracy\ninert everywhere", fillcolor="#e2f5ee", color="#1baf7a", penwidth=1.6];
+    saf [label="Safety\nsmall, mostly protective,\nvanishes with scale", fillcolor="#fdeadf", color="#eb6834", penwidth=1.6];
+  }
+
+  legend [shape=box, style="rounded,filled", fillcolor="#f9f9f7", color="#898781", fontsize=10, fontcolor="#0b0b0b",
+    label=<<b>Marker key (results figures)</b><br align="left"/>&#9679; retained&#160;&#160;&#9675; not significant<br align="left"/>&#10005; coherence-excluded<br align="left"/>&#9642; not-testable<br align="left"/>>];
+
+  prompt -> models;
+  steer  -> models;
+  models -> probe [color="#4a3aa7", style=dashed];
+  models -> acc;
+  models -> saf;
+  saf -> legend [style=invis];
+}

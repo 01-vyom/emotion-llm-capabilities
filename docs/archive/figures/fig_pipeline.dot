@@ -1,0 +1,14 @@
+digraph pipeline {
+  rankdir=LR; bgcolor="#fcfcfb"; fontname="Helvetica"; fontcolor="#0b0b0b"; pad=0.3; ranksep=0.55;
+  labelloc="t"; fontsize=14;
+  label=<<b>The eval-hygiene stack: five guardrails</b><br/> >;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4fb", color="#2a78d6",
+        fontname="Helvetica", fontsize=11, fontcolor="#0b0b0b", margin="0.22,0.16", penwidth=1.5];
+  edge [color="#52514e", penwidth=1.6, arrowsize=0.9];
+  a [label="fair probe\n(represented,\nnot lexical?)"];
+  b [label="dose witness\n(does the dose\nbite?)"];
+  c [label="three-control rule\n(is it the\ndirection?)"];
+  d [label="base-rate gate\n(is the DV\nin-band?)"];
+  e [label="coherence wall\n(is the output\nreal?)"];
+  a -> b -> c -> d -> e;
+}

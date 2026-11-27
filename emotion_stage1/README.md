@@ -67,6 +67,8 @@ Outputs:
 - `prompts.jsonl`: exact prompts sent to the model.
 - `predictions.jsonl`: raw outputs, parsed labels, correctness.
 - `summary.csv`: accuracy, parse rate, macro-F1, bootstrap CI per condition.
+- `paired_deltas.csv`: paired accuracy deltas against both neutral controls,
+  with bootstrap CIs and win/tie/loss counts.
 - `confusions.jsonl`: most common wrong gold/prediction pairs.
 - `metadata.json`: model, dataset, split, seed, and condition list.
 

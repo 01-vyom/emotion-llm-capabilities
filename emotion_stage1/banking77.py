@@ -37,7 +37,7 @@ def load_banking77_examples(
 ) -> tuple[list[BankingExample], list[str]]:
     from datasets import load_dataset
 
-    dataset = load_dataset(DATASET_NAME, split=split)
+    dataset = load_dataset(DATASET_NAME, split=split, trust_remote_code=True)
     labels = dataset.features["label"].names
 
     indices = list(range(len(dataset)))
