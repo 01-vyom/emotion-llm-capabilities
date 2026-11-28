@@ -1,14 +1,88 @@
-# Emotion LLM Capabilities | [Report](https://docs.google.com/document/d/1NqnWK7fCpIGDUoMf4hfkzcF31tjFYP1UjbFVRLBIjbE/edit?usp=sharing)
+# Emotion isn't the active ingredient: cheap controls explain away the emotional effects in Qwen Models
 
-Research code and notes for testing whether affective framing and emotion-like
-internal control signals can improve LLM reliability on tedious, low-salience
-tasks.
+[Report](https://docs.google.com/document/d/1NqnWK7fCpIGDUoMf4hfkzcF31tjFYP1UjbFVRLBIjbE/edit?usp=sharing)
 
-The repository contains the completed **Stage 1** classification pilot,
-**Stage 2** mechanism-matched IFEval and RULER NIAH suite, and **Stage 3**
-activation-direction and steering study.
+I tested how emotional prompts and activation steering affect instruction
+following, refusal decisions, and agreement with false claims in Qwen3 models
+with 8, 14, and 32 billion parameters.
 
-## Stage 1
+Did asking Qwen3-32B to stay calm help it recognize false claims? On the same
+600 claims, it agreed with 21% under the calm cue and 30.5% under a
+length-matched neutral cue. In an exploratory comparison, it agreed with just
+19% when the cue was omitted. The apparent benefit depended on the baseline.
+
+## Original hypothesis
+
+I expected a moderate emotional cue to help a model pay attention and check its
+work on repetitive tasks. Stronger pressure might instead encourage shortcuts,
+overconfidence, agreement with false claims, or mistakes about which requests
+to refuse. The experiments measured changes in model behavior.
+
+## Research stages
+
+### Stage 1 · Classifying banking requests
+
+Qwen3-8B classified 500 customer-service messages into 77 Banking77 intent
+labels under eight prompt conditions. Accuracy ranged from 62.0% to 63.6%.
+Many errors involved easily confused labels, which motivated a more direct
+test of whether the model followed instructions. [Implementation notes](emotion_stage1/README.md)
+
+### Stage 2 · Following instructions and retrieving details
+
+I tested Qwen3-8B and 14B on IFEval, which checks whether an answer follows
+every instruction, and RULER, which asks the model to retrieve details from
+long contexts. Some cues produced longer answers. None improved a primary
+score after correction for multiple comparisons.
+
+The suite includes single-key, multi-key, and aggregate retrieval, with a
+harder 32k/64k/128k YaRN configuration. It tracks omissions, answers in the
+right format with the wrong content, hallucinations, refusals, parsing, and
+output length. I selected prompt variants on development data, locked them
+before testing, and used paired bootstrap intervals, exact paired sign tests,
+and Holm correction. [Plan](docs/stage2-plan.md) · [Runbook](emotion_stage2/README.md)
+
+### Stage 3 · Steering internal activations
+
+A probe could distinguish curious from bored stories in held-out data at 14B.
+Steering along that direction did not improve held-out IFEval or harder
+32k/64k retrieval. In a follow-up (Stage 3.5), I rebuilt the stories as
+word-matched pairs. On 433 IFEval prompts at 8B, diligent steering scored
+0.9 percentage points above random steering (95% CI −2.5 to +4.6).
+[Execution record](docs/stage3-plan.md) · [Runbook](emotion_stage3/README.md)
+
+### Stage 4 · Testing safety judgments
+
+I shifted from accuracy to agreement with false claims, refusal decisions,
+shortcuts, and confidence calibration. At 8B, unsafe compliance and
+shortcutting both stayed at 0% in every condition. That made it impossible to
+tell whether a cue could reduce either behavior. [Stage 3.5 and 4 methods](docs/stage35-stage4-execution.md)
+
+### Stage 5 · Making the safety tasks harder
+
+I revised the 8B tasks so there was room for error before adding a cue or
+steering. The model now sometimes agreed with false claims, approved harmful
+requests, and trusted an unchecked answer. It still refused 0% of harmless
+requests at baseline, so this run could not test a reduction in unnecessary
+refusals. [Methods](docs/stage5-execution.md)
+
+### Stage 6 · Checking the controls across model sizes
+
+I reanalyzed the 8B steering results against no steering, a random
+direction, and a direction built from shuffled story labels. The
+shuffled direction reproduced the apparent increase in shortcutting. I then
+tested safety judgments across Qwen3-8B, 14B, and 32B, with a prompt-only
+comparison on Claude Sonnet 5. [Methods](docs/stage6-execution.md)
+
+### Stage 7 · Calibrating difficulty for each model
+
+I chose a different mix of items for each Qwen3 model, aiming for a baseline
+error rate near 30%. At 8B, the calm cue increased agreement with easy false
+claims and reduced agreement with harder ones, both relative to a neutral cue.
+On the refusal task, urgency increased REFUSE judgments by 11.9 percentage
+points for harmful requests and 27.7 points for harmless ones. The different
+item mixes limit comparisons across model sizes. [Methods](docs/stage7-execution.md)
+
+## Run the Banking77 pilot
 
 - Model: `Qwen/Qwen3-8B`
 - Benchmark: `PolyAI/banking77`
@@ -43,17 +117,11 @@ python -m emotion_stage1.run_stage1 \
   --output-dir runs/stage1_fixture_dry
 ```
 
-## Research Docs
+## Research docs
 
-- **[MATS write-up](docs/mats-writeup.md)** (canonical report; HTML/PDF via `python docs/build_mats_writeup.py`, figures via `python docs/figures/make_mats_figures.py`)
 - [Research plan](docs/research-plan.md)
 - [Literature survey](docs/literature-survey.md)
 - [Article outline](docs/article-outline.md)
-- [Stage 1 implementation notes](emotion_stage1/README.md)
-- [Stage 2 implementation notes](emotion_stage2/README.md)
-- [Stage 2 plan](docs/stage2-plan.md)
-- [Stage 3 implementation notes](emotion_stage3/README.md)
-- [Stage 3 plan and execution record](docs/stage3-plan.md)
 
 ### Rebuilding the write-up and checks
 
@@ -74,37 +142,3 @@ own. Repository commands and artifact locations are kept here:
   contains the repetition-loop check.
 - Plans and preregistered test sets are in `docs/stage*-plan.md` and
   `docs/stage7-execution.md`.
-
-## Core Hypothesis
-
-Moderate affective framing may improve reliability on repetitive, exacting tasks
-by increasing task salience and verification-like behavior. Extreme stress may
-instead increase shortcutting, overconfidence, refusal drift, sycophancy, or
-unsafe compliance. The project treats emotion as a functional control signal,
-not as evidence that models have subjective feelings.
-
-## Stage 2
-
-Stage 2 adds:
-
-- official-verifier IFEval constraint compliance
-- deterministic RULER-style single-key, multi-key, and aggregate retrieval,
-  including a hardened 32k/64k/128k YaRN configuration
-- omission, format-valid-but-wrong, hallucination, refusal, parse, and output
-  token signals
-- paired bootstrap deltas, exact paired sign tests, and Holm correction
-- dev-only prompt variant selection with locked held-out test prompts
-
-See [the Stage 2 runbook](emotion_stage2/README.md) for commands and artifact
-validation.
-
-## Stage 3
-
-Stage 3 extracted leakage-controlled affect directions and tested locked
-activation addition. One Qwen3-14B `curious_vs_bored` direction passed the
-corrected held-out probe gate, but its dev-selected steering configuration did
-not improve held-out IFEval or hardened 32k/64k RULER. No confirmatory
-comparison survived global Holm correction.
-
-See [the Stage 3 execution record](docs/stage3-plan.md) and
-[Stage 3 runbook](emotion_stage3/README.md).
